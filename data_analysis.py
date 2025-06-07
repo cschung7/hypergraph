@@ -2,7 +2,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import networkx as nx
-from typing import List, Iterable, Set
+from typing import List, Iterable, Set, Dict
 
 
 def fetch_ticker_data(tickers: List[str]) -> pd.DataFrame:
@@ -70,6 +70,19 @@ def fiedler_value(G: nx.Graph) -> float:
     return float(eigvals[1])
 
 
+def network_statistics(G: nx.Graph) -> Dict[str, float]:
+    """Compute several network statistics for the given graph."""
+    stats = {
+        "fiedler_value": fiedler_value(G),
+        "num_nodes": float(G.number_of_nodes()),
+        "num_edges": float(G.number_of_edges()),
+        "avg_degree": float(sum(dict(G.degree()).values()) / G.number_of_nodes()) if G.number_of_nodes() > 0 else 0.0,
+        "density": nx.density(G) if G.number_of_nodes() > 1 else 0.0,
+        "avg_clustering": nx.average_clustering(G) if G.number_of_nodes() > 0 else 0.0,
+    }
+    return stats
+
+
 def main():
     # Example: fetch tickers from S&P500 (this is limited)
     tickers = list(yf.Ticker('^GSPC').constituents.keys())[:100]  # limit for demo
@@ -81,9 +94,11 @@ def main():
     fundamentals['capsize_category'] = categorize_series(fundamentals['marketCap'])
 
     G = build_correlation_hypergraph(price)
-    fval = fiedler_value(G)
+    stats = network_statistics(G)
 
-    print(f"Fiedler value: {fval}")
+    print("Network statistics:")
+    for k, v in stats.items():
+        print(f"  {k}: {v}")
     print(fundamentals[['sector', 'industry', 'per_category', 'pbr_category', 'eps_category', 'capsize_category']].head())
 
 if __name__ == "__main__":
