@@ -2,7 +2,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import networkx as nx
-from typing import List
+from typing import List, Iterable, Set
 
 
 def fetch_ticker_data(tickers: List[str]) -> pd.DataFrame:
@@ -22,10 +22,42 @@ def categorize_series(s: pd.Series) -> pd.Series:
     return s.apply(lambda x: -1 if x <= q1 else (1 if x >= q3 else 0))
 
 
-def build_correlation_graph(price: pd.DataFrame) -> nx.Graph:
+def build_correlation_hypergraph(price: pd.DataFrame, threshold: float = 0.7) -> nx.Graph:
+    """Return a clique-expanded graph representing high-correlation groups.
+
+    The function forms hyperedges by clustering tickers whose pairwise
+    correlations exceed ``threshold``. Each hyperedge is expanded into a clique
+    so that standard graph algorithms (e.g., Laplacian eigenvalues) can be
+    applied.
+    """
     returns = price.pct_change().dropna(how='all')
     corr = returns.corr().fillna(0)
-    G = nx.from_pandas_adjacency(corr)
+
+    unvisited = set(corr.columns)
+    hyperedges: List[Set[str]] = []
+
+    while unvisited:
+        node = unvisited.pop()
+        group = {node}
+        queue = [node]
+        while queue:
+            current = queue.pop()
+            neighbors = set(corr.index[corr[current] >= threshold]) & unvisited
+            group.update(neighbors)
+            queue.extend(neighbors)
+            unvisited -= neighbors
+        if len(group) > 1:
+            hyperedges.append(group)
+
+    G = nx.Graph()
+    G.add_nodes_from(corr.columns)
+
+    for hedge in hyperedges:
+        for a in hedge:
+            for b in hedge:
+                if a < b:
+                    G.add_edge(a, b)
+
     return G
 
 
@@ -48,7 +80,7 @@ def main():
     fundamentals['eps_category'] = categorize_series(fundamentals['trailingEps'])
     fundamentals['capsize_category'] = categorize_series(fundamentals['marketCap'])
 
-    G = build_correlation_graph(price)
+    G = build_correlation_hypergraph(price)
     fval = fiedler_value(G)
 
     print(f"Fiedler value: {fval}")
