@@ -9,6 +9,7 @@ This repository contains simple scripts for fetching financial data with `yfinan
   It downloads S&P 500, NASDAQ, VIX, JPY/USD, EURO/USD, gold, WTI and the 10Y-2Y and 10Y-3M Treasury spreads.
 
 Both scripts require `yfinance`, `pandas`, `numpy`, and `networkx`.
+The list of dependencies is also available in `requirements.py` for reference.
 
 The hypergraph is formed by clustering tickers that exhibit a correlation above a threshold (default ``0.7``) and expanding these groups into cliques. Fundamentals are classified using quartiles so PER, PBR, EPS and market capitalization each receive a label of ``+1`` (top 25%), ``-1`` (bottom 25%) or ``0``.
 
@@ -18,3 +19,6 @@ Run a script with:
 python3 data_analysis.py
 python3 macro_analysis.py
 ```
+
+The repository includes an `__init__.py` so the functions can be imported as a
+package if desired.
