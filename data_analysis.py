@@ -5,6 +5,18 @@ import networkx as nx
 from typing import List, Iterable, Set, Dict
 
 
+def get_us_tickers(n: int = 1000) -> List[str]:
+    """Return up to ``n`` US tickers ranked by market capitalization."""
+    # Russell 1000 constituents generally represent the largest US companies.
+    index = yf.Ticker("^RUI")
+    try:
+        tickers = list(index.constituents.keys())
+    except Exception:
+        # Fallback to S&P 500 if Russell constituents are unavailable.
+        tickers = list(yf.Ticker("^GSPC").constituents.keys())
+    return tickers[:n]
+
+
 def fetch_ticker_data(tickers: List[str]) -> pd.DataFrame:
     """Fetch historical close prices and fundamentals for tickers."""
     data = yf.Tickers(tickers)
@@ -84,8 +96,8 @@ def network_statistics(G: nx.Graph) -> Dict[str, float]:
 
 
 def main():
-    # Example: fetch tickers from S&P500 (this is limited)
-    tickers = list(yf.Ticker('^GSPC').constituents.keys())[:100]  # limit for demo
+    # Download up to 1000 large-cap US tickers
+    tickers = get_us_tickers(1000)
     price, fundamentals = fetch_ticker_data(tickers)
 
     fundamentals['per_category'] = categorize_series(fundamentals['trailingPE'])

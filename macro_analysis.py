@@ -9,6 +9,8 @@ MACRO_TICKERS = {
     'euro_usd': 'EURUSD=X',
     'gold': 'GC=F',
     'wti': 'CL=F',
+    'bond10y2y': 'T10Y2Y',
+    'bond10y3m': 'T10Y3M',
 }
 
 
