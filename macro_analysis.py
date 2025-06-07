@@ -1,4 +1,9 @@
-import yfinance as yf
+try:
+    import yfinance as yf
+except ModuleNotFoundError as exc:
+    raise SystemExit(
+        "Missing required package 'yfinance'. Install dependencies with 'pip install yfinance pandas numpy networkx'"
+    ) from exc
 import pandas as pd
 
 MACRO_TICKERS = {
