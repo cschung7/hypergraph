@@ -39,6 +39,22 @@ def categorize_series(s: pd.Series) -> pd.Series:
     return s.apply(lambda x: -1 if x <= q1 else (1 if x >= q3 else 0))
 
 
+def build_correlation_network(price: pd.DataFrame, threshold: float = 0.7) -> nx.Graph:
+    """Return a graph connecting pairs of tickers with correlation above ``threshold``."""
+    returns = price.pct_change().dropna(how="all")
+    corr = returns.corr().fillna(0)
+
+    G = nx.Graph()
+    G.add_nodes_from(corr.columns)
+    cols = list(corr.columns)
+    for i, a in enumerate(cols):
+        for j in range(i + 1, len(cols)):
+            b = cols[j]
+            if corr.loc[a, b] >= threshold:
+                G.add_edge(a, b)
+    return G
+
+
 def build_correlation_hypergraph(price: pd.DataFrame, threshold: float = 0.7) -> nx.Graph:
     """Return a clique-expanded graph representing high-correlation groups.
 
@@ -110,10 +126,17 @@ def main():
     fundamentals['eps_category'] = categorize_series(fundamentals['trailingEps'])
     fundamentals['capsize_category'] = categorize_series(fundamentals['marketCap'])
 
+    G_corr = build_correlation_network(price)
+    corr_stats = network_statistics(G_corr)
+
+    print("Correlation network statistics:")
+    for k, v in corr_stats.items():
+        print(f"  {k}: {v}")
+
     G = build_correlation_hypergraph(price)
     stats = network_statistics(G)
 
-    print("Network statistics:")
+    print("Hypergraph (clique expanded) statistics:")
     for k, v in stats.items():
         print(f"  {k}: {v}")
     print(fundamentals[['sector', 'industry', 'per_category', 'pbr_category', 'eps_category', 'capsize_category']].head())
